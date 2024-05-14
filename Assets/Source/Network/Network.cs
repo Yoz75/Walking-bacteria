@@ -1,19 +1,19 @@
 
 using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Text;
+
 public class Network
 {
      private int InputLayerCount;
      private List<int> HiddenLayersCount;
      private int OutputLayerCount;
 
-    private Neuron[] InputLayer;
-    private Neuron[][] HiddenLayers;
-    private Neuron[] OutputLayer;
+    private NetworkLayer InputLayer;
+    private NetworkLayer[] HiddenLayers;
+    private NetworkLayer LastHiddenLayer;
+    private NetworkLayer OutputLayer;
 
-    private const string INPUT_LAYER_FILE_NAME = "InputLayer";
+    private int InputsCount;
 
     private NetworkConfigurator Config;
 
@@ -24,73 +24,60 @@ public class Network
         InputLayerCount = config.InputLayerCount;
         HiddenLayersCount = config.HiddenLayersCount;
         OutputLayerCount = config.OutputLayerCount;
-        
-        InputLayer = new Neuron[InputLayerCount];
-        OutputLayer = new Neuron[OutputLayerCount];
-        System.Random random = new System.Random();
+        InputsCount = config.InputsCount;
 
-        for(int i = 0; i < InputLayer.Length; i++)
+        InputLayer = new NetworkLayer(InputLayerCount, null, InputsCount);
+        HiddenLayers = new NetworkLayer[HiddenLayersCount.Count];
+        for(int i = 0; i < HiddenLayers.Length; i++)
         {
-            InputLayer[i] = new Neuron((float)Math.Tanh(random.NextDouble()));
-        }
 
-        HiddenLayers = new Neuron[HiddenLayersCount.Count][];
+            int previousLayerLength;
+            NetworkLayer previousLayer;
 
-        for(int i = 0; i < HiddenLayersCount.Count; i++)
-        {
-            HiddenLayers[i] = new Neuron[HiddenLayersCount[i]];
-            for(int j = 0; j < HiddenLayers[i].Length; j++)
+            if(i == 0)
             {
-                HiddenLayers[i][j] = new Neuron((float)Math.Tanh(random.NextDouble()));
+                previousLayerLength = InputLayerCount;
+                previousLayer = InputLayer;
             }
-        }
-
-        for(int i = 0; i < OutputLayer.Length; i++)
-        {
-            OutputLayer[i] = new Neuron((float)Math.Tanh(random.NextDouble()));
-        }
-    }
-
-    private void ProcessLayer(Neuron[] inputLayer, Neuron[] outputLayer)
-    {
-        for(int i = 0; i < outputLayer.Length; i++)
-        {
-            float sum = 0;
-            for(int j = 0; j < inputLayer.Length; j++)
+            else
             {
-                sum += inputLayer[j].Output;
+                 previousLayer = HiddenLayers[i - 1];
+                previousLayerLength = previousLayer.GetLength();
             }
-            outputLayer[i].ProcessData(sum);
+            HiddenLayers[i] = new NetworkLayer(HiddenLayersCount[i], previousLayer, previousLayerLength);
         }
+
+        LastHiddenLayer = HiddenLayers[HiddenLayersCount.Count - 1];
+        OutputLayer = new NetworkLayer(OutputLayerCount, LastHiddenLayer, LastHiddenLayer.GetLength());
+
     }
 
     public float[] Process(params float[] inputs)
     {
-        for(int i = 0; i < InputLayer.Length; i++)
-        {
-            InputLayer[i].ProcessData(inputs[i]);
-        }
+        float[] result;
 
-        for(int i = 0; i < HiddenLayers.Length; i++)
+        InputLayer.ProcessData(inputs);
+
+        float[] hiddenLayerInputs;
+        for(int i = 0; i < HiddenLayersCount.Count; i++)
         {
             if(i == 0)
             {
-                ProcessLayer(InputLayer, HiddenLayers[i]);
+                hiddenLayerInputs = InputLayer.Output;
             }
             else
             {
-                ProcessLayer(HiddenLayers[i - 1], HiddenLayers[i]);
-            }  
+                hiddenLayerInputs = HiddenLayers[i - 1].Output;
+            }
+            HiddenLayers[i].ProcessData(hiddenLayerInputs);
         }
 
-        ProcessLayer(HiddenLayers[HiddenLayers.Length - 1], OutputLayer);
+        OutputLayer.ProcessData(LastHiddenLayer.Output);
 
-        float[] results = new float[OutputLayerCount];
-        for(int i = 0; i < results.Length; i++)
-        {
-            results[i] = OutputLayer[i].Output;
-        }
-        return results;
+        result = OutputLayer.Output;
+
+        return result;
+
     }
 
     public Network Merge(Network other)
@@ -108,51 +95,20 @@ public class Network
 
         return kid;
         
-        Neuron[] MergeLayers(Neuron[] first, Neuron[] second)
+        NetworkLayer MergeLayers(NetworkLayer baseLayer, NetworkLayer second)
         {
-            Neuron[] result = new Neuron[first.Length];
-
-            for(int i = 0; i < first.Length; i++)
-            {
-                if(i % 2 == 0)
-                {
-                    result[i] = new Neuron(first[i].Weight);
-                }
-                else
-                {
-                    result[i] = new Neuron(second[i].Weight);
-                }
-            }
-            return result;
+            return null;
         }
     }
 
     public void Save(string path)
     {
-        string result;
-
-        if(!Directory.Exists(path))
-        {
-            Directory.CreateDirectory(path);
-        }
-
-        StringBuilder builder = new StringBuilder(InputLayer.Length);
-
-        foreach(var item in InputLayer)
-        {
-            builder.AppendLine(item.Weight.ToString());
-        }
-
-        result = builder.ToString();
-
-        File.WriteAllText(path + INPUT_LAYER_FILE_NAME, result);
-
     }
 
     public void Mutate()
     {
         Random random = new Random();
-        Neuron[] mutatingLayer;
+        NetworkLayer mutatingLayer;
         switch(random.Next(0,3))
         {
             case 0:
@@ -168,7 +124,10 @@ public class Network
                 throw new ArgumentException();
         }
 
-        mutatingLayer[random.Next(0, mutatingLayer.Length)].Weight = (float)Math.Tanh(random.NextDouble());
+        int neuronIndex = random.Next(0, mutatingLayer.GetLength());
+        int weightIndex = random.Next(0, mutatingLayer.WeightsPerNeuron);
+        float weightValue = (float)Math.Tanh(random.NextDouble());
+        mutatingLayer.SetNeuronWeightsAtPosition(neuronIndex, weightIndex, weightValue);
     }
 
 }

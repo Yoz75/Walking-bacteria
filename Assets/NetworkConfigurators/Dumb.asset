@@ -12,6 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 026dc917c8db40c4c92b3f446658d1fa, type: 3}
   m_Name: Dumb
   m_EditorClassIdentifier: 
+  InputsCount: 3
   InputLayerCount: 3
-  HiddenLayersCount: 0600000006000000
+  HiddenLayersCount: 0400000004000000
   OutputLayerCount: 3

@@ -10,15 +10,38 @@ public class Neuron
         private set;
     }
 
-    public float Weight;
-
-    public Neuron(float weight)
+    public int WeightsCount
     {
-        Weight = weight;
+        get
+        {
+            return Weights.Length;
+        }
     }
 
-    public void ProcessData(float input)
+    private float[] Weights;
+
+    public Neuron(int weightsCount)
     {
-        Output = (float)Math.Tanh(input * Weight);
+        Random random = new Random();
+        Weights = new float[weightsCount];
+        for (int i = 0; i < weightsCount; i++) 
+        {
+            Weights[i] = (float)Math.Sin(random.NextDouble());
+        }
     }
+
+    public void ProcessData(float[] inputs)
+    {
+        for(int i = 0; i < Weights.Length; i++)
+        {
+            Output += inputs[i] * Weights[i];
+        }
+        Output = (float)Math.Tanh(Output);
+    }
+
+    public void SetWeight(int weightIndex, float value)
+    {
+        Weights[weightIndex] = value;
+    }
+
 }

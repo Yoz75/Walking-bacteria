@@ -41,7 +41,7 @@ public class Bacteria : MonoBehaviour
 
     private void OnCollisionEnter2D(Collision2D collision)
     {
-        if(collision.collider.tag == FOOD_TAG)
+        if(collision.collider.CompareTag(FOOD_TAG))
         {
 
              AliveThing.Increase(HealthFoodIncrease);

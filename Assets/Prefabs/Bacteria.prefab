@@ -105,7 +105,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   EatBeforeDuplicate: 5
   Mutations: 2
-  RotationForce: 2
+  RotationForce: 4
   HealthFoodIncrease: 20
   Speed: 0.03
   Configurator: {fileID: 11400000, guid: e0e080f277b70024d97318e2dd73c791, type: 2}
